@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AKISHIA</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    /* ── Reset & base ──────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:            hsl(40, 30%, 97%);
+      --fg:            hsl(30, 15%, 20%);
+      --muted:         hsl(30, 15%, 45%);
+      --border:        hsl(35, 20%, 88%);
+      --font-serif:    'Cormorant Garamond', Georgia, serif;
+      --font-sans:     'DM Sans', system-ui, sans-serif;
+      --mx: 50%;
+      --my: 50%;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg);
+      color: var(--fg);
+      min-height: 100dvh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    }
+
+    a { text-decoration: none; color: inherit; }
+    img { display: block; }
+
+    /* ── Cursor layers ─────────────────────────────── */
+    .cursor-vignette,
+    .cursor-glow {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .cursor-vignette {
+      background: radial-gradient(
+        circle 380px at var(--mx) var(--my),
+        transparent 0%,
+        rgba(6, 5, 3, 0.14) 100%
+      );
+    }
+
+    .cursor-glow {
+      background:
+        radial-gradient(
+          circle 90px at var(--mx) var(--my),
+          rgba(220, 170, 70, 0.28) 0%,
+          rgba(200, 140, 50, 0.10) 50%,
+          transparent 100%
+        ),
+        radial-gradient(
+          circle 220px at var(--mx) var(--my),
+          rgba(210, 155, 60, 0.08) 0%,
+          transparent 100%
+        );
+    }
+
+    /* ── Navigation ────────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      padding: 1.5rem 3.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 50;
+      background: hsla(40, 30%, 97%, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid hsla(35, 20%, 60%, 0.3);
+      opacity: 0;
+      animation: fadeIn 1.2s ease 0.4s forwards;
+    }
+
+    nav .wordmark {
+      width: 7rem;
+      height: auto;
+      object-fit: contain;
+      filter: invert(1) sepia(1) saturate(0.2) brightness(0.4);
+    }
+
+    nav .ig-link {
+      font-family: var(--font-sans);
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: opacity 0.5s;
+    }
+    nav .ig-link:hover { opacity: 0.45; }
+
+    /* ── Hero ──────────────────────────────────────── */
+    #hero {
+      position: relative;
+      height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .hero-inner {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+      will-change: transform, opacity;
+    }
+
+    .monogram-wrap {
+      animation: fadeUp 2s ease 0.1s both;
+      will-change: transform;
+    }
+
+    .monogram {
+      width: 3.5rem;
+      height: auto;
+      object-fit: contain;
+      filter: invert(1) sepia(1) saturate(0.2) brightness(0.32);
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* Flying letters */
+    .letters {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: visible;
+      user-select: none;
+    }
+
+    .letter {
+      font-family: var(--font-serif);
+      font-weight: 300;
+      font-size: clamp(3.5rem, 10vw, 9rem);
+      letter-spacing: 0.12em;
+      line-height: 1;
+      color: var(--fg);
+      display: inline-block;
+      will-change: transform, opacity;
+      animation: fadeUp 2s ease 0.3s both;
+    }
+
+    /* Scroll cue */
+    .scroll-cue {
+      position: absolute;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      opacity: 0;
+      animation: fadeIn 1.5s ease 2.2s forwards;
+    }
+
+    .scroll-line {
+      width: 1px;
+      height: 2.5rem;
+      background: rgba(58, 52, 48, 0.3);
+      transform-origin: top;
+      animation: pulseLine 2.2s ease-in-out infinite;
+    }
+
+    /* ── Coming Soon section ───────────────────────── */
+    #craft {
+      position: relative;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      padding: 6rem 6rem;
+      overflow: hidden;
+    }
+
+    .craft-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      max-width: 28rem;
+      z-index: 10;
+    }
+
+    .eyebrow {
+      font-family: var(--font-sans);
+      font-size: 0.6rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+
+    .craft-heading {
+      font-family: var(--font-serif);
+      font-weight: 300;
+      font-size: clamp(2.2rem, 4vw, 3.75rem);
+      line-height: 1.15;
+      color: var(--fg);
+      margin-bottom: 2rem;
+    }
+
+    .craft-body {
+      font-family: var(--font-sans);
+      font-size: 0.875rem;
+      color: var(--muted);
+      line-height: 1.7;
+      font-weight: 300;
+      max-width: 18rem;
+      margin-bottom: 3rem;
+    }
+
+    .divider {
+      width: 2rem;
+      height: 1px;
+      background: var(--border);
+      margin-bottom: 3rem;
+    }
+
+    .stay-label {
+      font-family: var(--font-sans);
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.25rem;
+    }
+
+    .ig-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      border: 1px solid rgba(58, 52, 48, 0.25);
+      padding: 0.875rem 1.75rem;
+      font-family: var(--font-sans);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--fg);
+      transition: background 0.5s, color 0.5s;
+    }
+
+    .ig-btn:hover {
+      background: var(--fg);
+      color: var(--bg);
+    }
+
+    .ig-btn .handle {
+      color: var(--muted);
+      transition: color 0.5s;
+    }
+
+    .ig-btn:hover .handle {
+      color: rgba(249, 247, 244, 0.6);
+    }
+
+    /* ── Collage grid ──────────────────────────────── */
+    .craft-right {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-left: 4rem;
+    }
+
+    .collage {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: repeat(4, 10rem);
+      gap: 3px;
+      width: 100%;
+      max-width: 28rem;
+      overflow: hidden;
+    }
+
+    .collage img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .collage img:nth-child(1) { grid-area: 1 / 1 / 3 / 2; }
+    .collage img:nth-child(2) { grid-area: 1 / 2 / 2 / 3; }
+    .collage img:nth-child(3) { grid-area: 2 / 2 / 3 / 3; }
+    .collage img:nth-child(4) { grid-area: 3 / 1 / 4 / 2; }
+    .collage img:nth-child(5) { grid-area: 3 / 2 / 5 / 3; }
+    .collage img:nth-child(6) { grid-area: 4 / 1 / 5 / 2; }
+
+    /* Mobile collage */
+    .collage-mobile {
+      display: none;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      width: 100%;
+      margin-top: 4rem;
+    }
+
+    .collage-mobile img {
+      width: 100%;
+      aspect-ratio: 3/4;
+      object-fit: cover;
+    }
+
+    /* ── Footer ────────────────────────────────────── */
+    footer {
+      border-top: 1px solid hsla(35, 20%, 60%, 0.4);
+      padding: 2rem 3.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    footer .wordmark {
+      width: 5rem;
+      height: auto;
+      object-fit: contain;
+      filter: invert(1) sepia(1) saturate(0.2) brightness(0.5);
+    }
+
+    footer .copyright {
+      font-family: var(--font-sans);
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ── Fade-in on scroll ─────────────────────────── */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(2.5rem);
+      transition: opacity 1.4s ease, transform 1.4s ease;
+    }
+
+    .fade-in.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .fade-in[data-delay="1"] { transition-delay: 0.15s; }
+    .fade-in[data-delay="2"] { transition-delay: 0.30s; }
+    .fade-in[data-delay="3"] { transition-delay: 0.45s; }
+    .fade-in[data-delay="4"] { transition-delay: 0.55s; }
+    .fade-in[data-delay="5"] { transition-delay: 0.65s; }
+
+    /* ── Keyframes ─────────────────────────────────── */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(1.5rem); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulseLine {
+      0%, 100% { transform: scaleY(1);   opacity: 0.3; }
+      50%       { transform: scaleY(1.8); opacity: 0.8; }
+    }
+
+    /* ── Responsive ────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 1.25rem 1.5rem; }
+      nav .wordmark { width: 5.5rem; }
+
+      #craft {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 6rem 1.5rem 3rem;
+      }
+
+      .craft-right { display: none; }
+
+      .collage-mobile { display: grid; }
+
+      footer {
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem 1.5rem;
+        text-align: center;
+      }
+    }
+
+    @media (min-width: 1024px) {
+      nav { padding: 2rem 3.5rem; }
+      #craft { padding: 6rem 6rem 6rem 6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Cursor layers -->
+  <div class="cursor-vignette"></div>
+  <div class="cursor-glow"></div>
+
+  <!-- Navigation -->
+  <nav>
+    <img class="wordmark" src="akishia-wordmark.png" alt="AKISHIA" />
+    <a class="ig-link" href="https://instagram.com/_akishia_" target="_blank" rel="noreferrer">
+      @_akishia_
+    </a>
+  </nav>
+
+  <!-- Hero -->
+  <section id="hero">
+    <div class="hero-inner" id="heroInner">
+
+      <!-- Monogram -->
+      <div class="monogram-wrap" id="monoWrap">
+        <img class="monogram" src="akishia-monogram.png" alt="AKISHIA monogram" />
+      </div>
+
+      <!-- Flying letters -->
+      <div class="letters" id="letters">
+        <span class="letter" data-spread="-520">A</span>
+        <span class="letter" data-spread="-320">K</span>
+        <span class="letter" data-spread="-160">I</span>
+        <span class="letter" data-spread="0">S</span>
+        <span class="letter" data-spread="160">H</span>
+        <span class="letter" data-spread="320">I</span>
+        <span class="letter" data-spread="520">A</span>
+      </div>
+    </div>
+
+    <!-- Scroll cue -->
+    <div class="scroll-cue">
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- Coming Soon -->
+  <section id="craft">
+    <div class="craft-left">
+      <p class="eyebrow fade-in">First Collection</p>
+      <h2 class="craft-heading fade-in" data-delay="1">
+        Something is<br />being crafted.
+      </h2>
+      <p class="craft-body fade-in" data-delay="2">
+        Our first collection is under development. When it arrives, it will speak for itself.
+      </p>
+      <div class="divider fade-in" data-delay="3"></div>
+      <p class="stay-label fade-in" data-delay="4">Stay close</p>
+      <a
+        class="ig-btn fade-in"
+        data-delay="5"
+        href="https://instagram.com/_akishia_"
+        target="_blank"
+        rel="noreferrer"
+      >
+        <span>Follow on Instagram</span>
+        <span class="handle">@_akishia_</span>
+      </a>
+
+      <!-- Mobile collage -->
+      <div class="collage-mobile fade-in" data-delay="5">
+        <img src="collage-1.jpeg" alt="" />
+        <img src="collage-2.jpeg" alt="" />
+        <img src="collage-3.jpeg" alt="" />
+        <img src="collage-4.jpeg" alt="" />
+        <img src="collage-5.jpeg" alt="" />
+        <img src="collage-6.jpeg" alt="" />
+      </div>
+    </div>
+
+    <!-- Desktop collage -->
+    <div class="craft-right">
+      <div class="collage fade-in" data-delay="1">
+        <img src="collage-1.jpeg" alt="" />
+        <img src="collage-2.jpeg" alt="" />
+        <img src="collage-3.jpeg" alt="" />
+        <img src="collage-4.jpeg" alt="" />
+        <img src="collage-5.jpeg" alt="" />
+        <img src="collage-6.jpeg" alt="" />
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <img class="wordmark" src="akishia-wordmark.png" alt="AKISHIA" />
+    <p class="copyright">&copy; <span id="year"></span> AKISHIA. All rights reserved.</p>
+  </footer>
+
+  <script>
+    // ── Year ──────────────────────────────────────────
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // ── Cursor glow ───────────────────────────────────
+    window.addEventListener('mousemove', (e) => {
+      document.documentElement.style.setProperty('--mx', e.clientX + 'px');
+      document.documentElement.style.setProperty('--my', e.clientY + 'px');
+    }, { passive: true });
+
+    // ── Scroll: hero parallax + letter spread ─────────
+    const heroInner  = document.getElementById('heroInner');
+    const monoWrap   = document.getElementById('monoWrap');
+    const letters    = document.querySelectorAll('.letter');
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+    function mapRange(val, inMin, inMax, outMin, outMax) {
+      return lerp(outMin, outMax, clamp((val - inMin) / (inMax - inMin), 0, 1));
+    }
+
+    function onScroll() {
+      const scrollY = window.scrollY;
+      const vh = window.innerHeight;
+      const totalScroll = document.body.scrollHeight - vh;
+
+      // progress 0 → 1 across full page
+      const progress = scrollY / totalScroll;
+
+      // Hero fade-out: 0 → 0.20
+      const heroP = clamp(progress / 0.20, 0, 1);
+      const heroOpacity = 1 - heroP;
+      const heroY = heroP * 70;
+      heroInner.style.opacity = heroOpacity;
+      heroInner.style.transform = `translateY(${heroY}px)`;
+
+      // Letter spread: 0 → 0.22
+      const spreadP = clamp(progress / 0.22, 0, 1);
+      const spreadOpacity = spreadP < 0.12 / 0.22
+        ? mapRange(spreadP, 0, 0.12 / 0.22, 1, 0.4)
+        : mapRange(spreadP, 0.12 / 0.22, 1, 0.4, 0);
+
+      letters.forEach((el) => {
+        const maxSpread = parseFloat(el.dataset.spread);
+        const tx = spreadP * maxSpread;
+        el.style.transform = `translateX(${tx}px)`;
+        el.style.opacity = spreadOpacity;
+      });
+
+      // Monogram subtle rise
+      const monoY = spreadP * -40;
+      monoWrap.style.transform = `translateY(${monoY}px)`;
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    // ── Intersection Observer: fade-in on scroll ──────
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15 });
+
+    document.querySelectorAll('.fade-in').forEach((el) => observer.observe(el));
+  </script>
+</body>
+</html>
